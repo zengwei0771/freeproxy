@@ -49,7 +49,7 @@ class Proxys(object):
             for page in range(1, 6):
                 r = req.get('http://www.xicidaili.com/nn/%d' % page,
                             headers=HEADERS, timeout=8)
-                dom = BeautifulSoup(r.content, "html.parser", from_encoding="UTF-8")
+                dom = BeautifulSoup(r.content, "html5lib", from_encoding="UTF-8")
                 for tr in dom.find('table', id='ip_list').findAll('tr'):
                     tds = tr.findAll('td')
                     if len(tds) == 0 or tds[5].text.strip() != 'HTTP':
@@ -68,7 +68,7 @@ class Proxys(object):
             for page in range(1, 11):
                 r = requests.get('http://www.kuaidaili.com/free/inha/%d/' % page,
                                  headers=HEADERS, timeout=8)
-                dom = BeautifulSoup(r.content, "html.parser", from_encoding="UTF-8")
+                dom = BeautifulSoup(r.content, 'html5lib', from_encoding="UTF-8")
                 for tr in dom.find('div', id='list').findAll('tr'):
                     tds = tr.findAll('td')
                     if len(tds) == 0 or tds[3].text.strip() != 'HTTP':
@@ -87,7 +87,7 @@ class Proxys(object):
             for page in range(1, 11):
                 r = req.get('http://www.bigdaili.com/dailiip/1/%d.html' % page,
                                  headers=HEADERS, timeout=8)
-                dom = BeautifulSoup(r.content, "html.parser", from_encoding="UTF-8")
+                dom = BeautifulSoup(r.content, "html5lib", from_encoding="UTF-8")
                 for tr in dom.find('table').findAll('tr'):
                     tds = tr.findAll('td')
                     if len(tds) == 0 or tds[3].text.strip() != 'HTTP':
@@ -105,7 +105,7 @@ class Proxys(object):
         try:
             r = req.get('http://proxy.goubanjia.com/free/gngn/index.shtml',
                              headers=HEADERS, timeout=8)
-            dom = BeautifulSoup(r.content, "html.parser", from_encoding="UTF-8")
+            dom = BeautifulSoup(r.content, "html5lib", from_encoding="UTF-8")
             for tr in dom.find('table').findAll('tr'):
                 tds = tr.findAll('td')
                 if len(tds) == 0 or tds[3].text.strip() != 'http':
