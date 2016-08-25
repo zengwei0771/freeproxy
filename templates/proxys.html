@@ -1,0 +1,26 @@
+<html>
+    <body>
+        <table>
+            <thead>
+                <tr>
+                    <th>主机</th>
+                    <th>端口</th>
+                    <th>匿名度</th>
+                    <th>类型</th>
+                    <th>所在位置</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in results %}
+                <tr>
+                    <td>{{item['host']}}</td>
+                    <td>{{item['port']}}</td>
+                    <td>{{item['nm']}}</td>
+                    <td>{{item['type']}}</td>
+                    <td>{{item['address']}}</td>
+                </tr>
+                {% end %}
+            </tbody>
+        </table>
+    </body>
+</html>

@@ -15,14 +15,19 @@ from redis import Redis
 from config import *
 import time
 import json
+from multiprocessing import Process
+from logging import FileHandler, Formatter
 
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
-    stream=sys.stdout,
+    filename="./logs/proxy.log",
+    filemode="w",
+    format="%(asctime)s-%(name)s-%(levelname)s-%(message)s",
+    level=logging.WARN
 )
+
+DEAD_TIME = 600
+CHECK_TIME = 600
 
 
 class Proxys(object):
@@ -52,11 +57,34 @@ class Proxys(object):
                 dom = BeautifulSoup(r.content, "html5lib", from_encoding="UTF-8")
                 for tr in dom.find('table', id='ip_list').findAll('tr'):
                     tds = tr.findAll('td')
-                    if len(tds) == 0 or tds[5].text.strip() != 'HTTP':
+                    if len(tds) == 0:
                         continue
                     host = tds[1].text.strip()
                     port = int(tds[2].text.strip())
-                    proxys.append('http://%s:%d' % (host, port))
+                    proxys.append({
+                        'host': host,
+                        'port': port,
+                        'address': tds[3].text.strip(),
+                        'nm': tds[4].text.strip(),
+                        'type': 'http',
+                    })
+            for page in range(1, 6):
+                r = req.get('http://www.xicidaili.com/qq/%d' % page,
+                            headers=HEADERS, timeout=8)
+                dom = BeautifulSoup(r.content, "html5lib", from_encoding="UTF-8")
+                for tr in dom.find('table', id='ip_list').findAll('tr'):
+                    tds = tr.findAll('td')
+                    if len(tds) == 0:
+                        continue
+                    host = tds[1].text.strip()
+                    port = int(tds[2].text.strip())
+                    proxys.append({
+                        'host': host,
+                        'port': port,
+                        'address': tds[3].text.strip(),
+                        'nm': tds[4].text.strip(),
+                        'type': 'socks',
+                    })
         except Exception, e:
             logging.error(str(e))
         return proxys
@@ -75,7 +103,13 @@ class Proxys(object):
                         continue
                     host = tds[0].text.strip()
                     port = int(tds[1].text.strip())
-                    proxys.append('http://%s:%d' % (host, port))
+                    proxys.append({
+                        'host': host,
+                        'port': port,
+                        'address': tds[4].text.strip(),
+                        'nm': '高匿',
+                        'type': 'http'
+                    })
         except Exception, e:
             logging.error(str(e))
         return proxys
@@ -94,7 +128,13 @@ class Proxys(object):
                         continue
                     host = tds[0].text.strip()
                     port = int(tds[1].text.strip())
-                    proxys.append('http://%s:%d' % (host, port))
+                    proxys.append({
+                        'host': host,
+                        'port': port,
+                        'address': tds[5].text.strip(),
+                        'nm': '高匿',
+                        'type': 'http' if 'http' in tds[3].text.strip() else 'socks',
+                    })
         except Exception, e:
             logging.error(str(e))
         return proxys
@@ -116,7 +156,13 @@ class Proxys(object):
                         continue
                     host += item.text.strip()
                 port = int(tds[1].text.strip())
-                proxys.append('http://%s:%d' % (host, port))
+                proxys.append({
+                    'host': host,
+                    'port': port,
+                    'address': tds[5].text.strip(),
+                    'nm': '高匿',
+                    'type': 'http' if 'http' in tds[3].text.strip() else 'socks',
+                })
         except Exception, e:
             logging.error(str(e))
         return proxys
@@ -159,44 +205,6 @@ class ProxysRequest(object):
                 self.proxys[p] = {'valid': True, 'priority': 0}
 
 
-class FetchProxyThread(threading.Thread):
-    
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.redis = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
-        self.pr = ProxysRequest([])
-
-    def run(self):
-        self.redis.delete('alives')
-        self.redis.delete('deads')
-
-        while True:
-            alives = self.redis.hgetall('alives')
-            deads = self.redis.hgetall('deads')
-            proxys = []
-            for p in alives:
-                alives[p] = json.loads(alives[p])
-                if alives[p]['status'] != 'init':
-                    proxys.append(p)
-            if len(proxys) > 10:
-                self.pr.update(proxys)
-                ps = Proxys.fetch_xici(self.pr) + Proxys.fetch_kuai(self.pr) + \
-                        Proxys.fetch_big(self.pr)
-            else:
-                ps = Proxys.fetch_xici() + Proxys.fetch_kuai() + Proxys.fetch_big()
-            print self.pr.proxys
-
-            now = datetime.now()
-            for p in ps:
-                if not alives.get(p) and not deads.get(p):
-                    self.redis.hset('alives', p, json.dumps({'status':'init'}))
-                elif deads.get(p) and datetime.strptime(deads[p], '%Y-%m-%d %H:%M:%S') < now - timedelta(seconds=600):
-                    self.redis.hdel('deads', p)
-                    self.redis.hset('alives', p, json.dumps({'status':'init'}))
-
-            time.sleep(600)
-
-
 class CheckProxyThread(threading.Thread):
 
     def __init__(self):
@@ -212,13 +220,20 @@ class CheckProxyThread(threading.Thread):
                 if proxy is None:
                     break
 
-                if Proxys.test_proxy(proxy):
-                    self.redis.hset('alives',
-                                    proxy,
-                                    json.dumps({'status':'living', 'time':datetime.now().strftime('%Y-%m-%d %H:%M:%S')}))
+                r = Proxys.test_proxy(proxy)
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                if r:
+                    values = self.redis.hget('alives', proxy)
+                    if values:
+                        values = json.loads(values)
+                        values['status'] = 'living'
+                        values['time'] = now
+                        self.redis.hset('alives',
+                                        proxy,
+                                        json.dumps(values))
                 else:
                     self.redis.hdel('alives', proxy)
-                    self.redis.hset('deads', proxy, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                    self.redis.hset('deads', proxy, now)
 
         in_ = Queue()
         workers = []
@@ -235,7 +250,7 @@ class CheckProxyThread(threading.Thread):
                 tochecks = []
                 for p in alives:
                     alives[p] = json.loads(alives[p])
-                    if alives[p]['status'] == 'init' or datetime.strptime(alives[p]['time'], '%Y-%m-%d %H:%M:%S') < now - timedelta(seconds=600):
+                    if alives[p]['status'] == 'init' or datetime.strptime(alives[p]['time'], '%Y-%m-%d %H:%M:%S') < now - timedelta(seconds=CHECK_TIME):
                         tochecks.append(p)
 
                 [in_.put(p) for p in tochecks]
@@ -246,20 +261,44 @@ class CheckProxyThread(threading.Thread):
         [workers[i].join() for i in range(self.worker_num)]
 
 
-def main():
-    cpt = CheckProxyThread()
-    cpt.setDaemon(True)
-    cpt.start()
+class ProxyProcess(Process):
+    
+    def run(self):
+        rs = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
+        #rs.delete('alives')
+        #rs.delete('deads')
+        pr = ProxysRequest([])
 
-    fpt = FetchProxyThread()
-    fpt.setDaemon(True)
-    fpt.start()
+        cpt = CheckProxyThread()
+        cpt.setDaemon(True)
+        cpt.start()
 
-    time.sleep(100000000)
+        while True:
+            alives = rs.hgetall('alives')
+            deads = rs.hgetall('deads')
+            proxys = []
+            for p in alives:
+                alives[p] = json.loads(alives[p])
+                if alives[p]['status'] != 'init':
+                    proxys.append(p)
+            if len(proxys) > 16:
+                pr.update(proxys)
+                ps = Proxys.fetch_xici(pr) + Proxys.fetch_kuai(pr) + \
+                        Proxys.fetch_big(pr)
+            else:
+                ps = Proxys.fetch_xici() + Proxys.fetch_kuai() + Proxys.fetch_big()
+
+            now = datetime.now()
+            for p in ps:
+                url = 'http://%s:%d' % (p['host'], p['port'])
+                if not alives.get(url) and not deads.get(url):
+                    rs.hset('alives', url, json.dumps({'status':'init', 'address':p['address'], 'nm':p['nm'], 'type':p['type']}))
+                elif deads.get(url) and datetime.strptime(deads[url], '%Y-%m-%d %H:%M:%S') < now - timedelta(seconds=DEAD_TIME):
+                    rs.hdel('deads', url)
+                    rs.hset('alives', url, json.dumps({'status':'init', 'address':p['address'], 'nm':p['nm'], 'type':p['type']}))
+
+            time.sleep(600)
 
 
 if __name__ == '__main__':
-    #print Proxys.get_proxys()
-    #print Proxys.test_proxy('http://39.88.192.207:81')
-    #print Proxys.fetch_xici(['http://60.13.74.143:80'])
-    main()
+    ProxyProcess().run()
