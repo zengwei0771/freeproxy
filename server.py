@@ -74,7 +74,7 @@ def start_server(debug):
 
 
 if __name__ == "__main__":
-    p = ProxyProcess()
-    p.daemon = True
-    p.start()
+    #p = ProxyProcess()
+    #p.daemon = True
+    #p.start()
     start_server(True if 'debug' in sys.argv else False)

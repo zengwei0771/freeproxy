@@ -1,26 +1,116 @@
 <html>
+    <head>
+        <title>国内免费高匿代理服务器IP列表 - KK代理</title>
+
+        <meta http-equiv="Cache-Control" content="no-transform" />
+        <meta http-equiv="Cache-Control" content="no-siteapp" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <meta name="keywords" content="国内免费高匿代理服务器,高匿免费,高匿代理,免费代理" />
+        <meta name="description" content="KK代理每天提供大量速度稳定的免费高匿代理IP列表,包括http代理、socks代理,每天扫描IP数量10万+,提供免费的查询API;高匿代理ip,免费ip代理,国内ip代理,优质资源只为用户打招,完全免费!" />
+
+        <style>
+            body {
+                margin: 0;
+            }
+            .head{
+                background-color: #efefef;
+                height: 30px;
+                font-size: 11px;
+                line-height: 30px;
+                font-weight: bolder;
+                color: #0074a2;
+                border-bottom: 1px solid;
+                padding: 0 40px;
+            }
+            .head > a {
+                color: #0074a2;
+                text-decoration: none;
+            }
+            .head > a:hover {
+                color: #0074f2;
+            }
+
+            .body {
+                min-height: 640px;
+            }
+            .body > div {
+                width: 1024px;
+                margin: 20px auto;
+            }
+            table {
+                width: 1024px;
+                margin: 20px auto;
+                border-collapse: collapse;
+            }
+            thead {
+                background-color: #DDEBEA;
+                border-right: 1px solid #DDEBEA;
+            }
+            tbody {
+                border-right: 1px dotted #CDDBDA;
+            }
+            th {
+                padding: 4px;
+            }
+            td {
+                border-bottom: 1px dotted #CDDBDA;
+                border-left: 1px dotted #CDDBDA;
+                padding: 4px;
+            }
+
+            .foot {
+                border-top: 1px solid;
+                color: #aaa;
+                text-align: center;
+                font-size: 11px;
+            }
+            .foot a {
+                color: #aaa;
+                text-decoration: none;
+            }
+            .foot a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
     <body>
-        <table>
-            <thead>
-                <tr>
-                    <th>主机</th>
-                    <th>端口</th>
-                    <th>匿名度</th>
-                    <th>类型</th>
-                    <th>所在位置</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in results %}
-                <tr>
-                    <td>{{item['host']}}</td>
-                    <td>{{item['port']}}</td>
-                    <td>{{item['nm']}}</td>
-                    <td>{{item['type']}}</td>
-                    <td>{{item['address']}}</td>
-                </tr>
-                {% end %}
-            </tbody>
-        </table>
+        <div class="head">
+            <a href="http://proxy.techkk.com/">KK代理</a>
+        </div>
+        <div class="body">
+            <div>
+                <h4>免费高匿代理服务器列表</h4>
+                <p>KK代理每天提供大量速度稳定的免费高匿代理IP列表，包括http代理、socks代理，每天扫描IP数量10万+，提供免费的查询API。</p>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>主机</th>
+                        <th>端口</th>
+                        <th>匿名度</th>
+                        <th>类型</th>
+                        <th>所在位置</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        <td>{{item['host']}}</td>
+                        <td>{{item['port']}}</td>
+                        <td>{{item['nm']}}</td>
+                        <td>{{item['type']}}</td>
+                        <td>{{item['address']}}</td>
+                    </tr>
+                    {% end %}
+                </tbody>
+            </table>
+            <div>
+                <a href="/proxys.json" title="国内免费代理高匿服务器IP列表API">免费高匿服务器API</a>
+            </div>
+        </div>
+        <div class="foot">
+            <p>&copy;2016 <a href="http://proxy.techkk.com/">KK代理</a> <a href="http://www.miitbeian.gov.cn/" target="_blank">沪ICP备12047889号-1</a> <script src="http://s95.cnzz.com/z_stat.php?" language="JavaScript"></script></p>
+        </div>
     </body>
 </html>
