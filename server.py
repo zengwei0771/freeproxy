@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 
-class PsHtmlHandler(web.RequestHandler):
+class HtmlHandler(web.RequestHandler):
     def get(self):
         rs = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
         alives = rs.hgetall('alives')
@@ -38,7 +38,7 @@ class PsHtmlHandler(web.RequestHandler):
         self.render('proxys.html', results=results)
 
 
-class PsJsonHandler(web.RequestHandler):
+class JsonHandler(web.RequestHandler):
     def get(self):
         rs = Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB)
         alives = rs.hgetall('alives')
@@ -58,9 +58,9 @@ class PsJsonHandler(web.RequestHandler):
 
 def start_server(debug):
     app = web.Application([
-        (r"/", web.RedirectHandler, {"url": "/proxys.html"}),
-        (r"/proxys.html", PsHtmlHandler),
-        (r"/proxys.json", PsJsonHandler),
+        (r"/", web.RedirectHandler, {"url": "/proxys"}),
+        (r"/proxys", HtmlHandler),
+        (r"/proxys.json", JsonHandler),
     ], **{
         "debug": debug,
         "cookie_secret": SERVER_SECRET,
@@ -74,7 +74,8 @@ def start_server(debug):
 
 
 if __name__ == "__main__":
-    #p = ProxyProcess()
-    #p.daemon = True
-    #p.start()
+    if 'debug' not in sys.argv:
+        p = ProxyProcess()
+        p.daemon = True
+        p.start()
     start_server(True if 'debug' in sys.argv else False)
