@@ -58,6 +58,7 @@ class JsonHandler(web.RequestHandler):
 
 def start_server(debug):
     app = web.Application([
+        (r"/favicon.ico", web.StaticFileHandler),
         (r"/", web.RedirectHandler, {"url": "/proxys"}),
         (r"/proxys", HtmlHandler),
         (r"/proxys.json", JsonHandler),
