@@ -1,8 +1,10 @@
 <?php
-    require_once('config');
+    require_once('config.php');
 
     $redis = new Redis();
     $redis->connect('localhost', 6379);
+
+    $alives = $redis->hgetall('alives');
 
     $redis->close();
 ?>
@@ -134,15 +136,18 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in results %}
+                    <?php foreach($alives as $key =>$value) {
+                        $key = parse_url($key);
+                        $value = json_decode($value);
+                     ?>
                     <tr>
-                        <td>{{item['host']}}</td>
-                        <td>{{item['port']}}</td>
-                        <td>{{item['nm']}}</td>
-                        <td>{{item['type']}}</td>
-                        <td>{{item['address']}}</td>
+                        <td><?php echo $key['host'];?></td>
+                        <td><?php echo $key['port'];?></td>
+                        <td><?php echo $value->nm;?></td>
+                        <td><?php echo $value->type;?></td>
+                        <td><?php echo $value->address;?></td>
                     </tr>
-                    {% end %}
+                    <?php } ?>
                 </tbody>
             </table>
             <div class="bottom">
